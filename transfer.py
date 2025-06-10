@@ -306,31 +306,82 @@ except Exception as e:
 
 # Пошук найкоротших шляхів між усіма парами вершин за допомогою вбудованої реалізації алгоритма Дійкстри
 
-all_pairs_shortest_paths_lengths = {}
-try:
-    for source_node, distances in nx.all_pairs_dijkstra_path_length(G, weight='weight'):
-        all_pairs_shortest_paths_lengths[source_node] = distances
+# all_pairs_shortest_paths_lengths = {}
+# try:
+#     for source_node, distances in nx.all_pairs_dijkstra_path_length(G, weight='weight'):
+#         all_pairs_shortest_paths_lengths[source_node] = distances
     
-    print("\nПриклади найкоротших відстаней між деякими парами зупинок (час у хвилинах):")
+#     print("\nПриклади найкоротших відстаней між деякими парами зупинок (час у хвилинах):")
     
-    nodes_to_display = list(G.nodes())
+#     nodes_to_display = list(G.nodes())
     
-    for source in nodes_to_display:
-        for target in nodes_to_display:
-            if source != target and target in all_pairs_shortest_paths_lengths[source]:
-                length = all_pairs_shortest_paths_lengths[source][target]
-                print(f"Від {G.nodes[source]['name']} ({source}) до {G.nodes[target]['name']} ({target}): {length:.2f} хв")
-            elif source == target:
-                print(f"Від {G.nodes[source]['name']} ({source}) до {G.nodes[target]['name']} ({target}): 0.00 хв (сама до себе)")
-            else:
-                print(f"Від {G.nodes[source]['name']} ({source}) до {G.nodes[target]['name']} ({target}): Шлях не знайдено.")
+#     for source in nodes_to_display:
+#         for target in nodes_to_display:
+#             if source != target and target in all_pairs_shortest_paths_lengths[source]:
+#                 length = all_pairs_shortest_paths_lengths[source][target]
+#                 print(f"Від {G.nodes[source]['name']} ({source}) до {G.nodes[target]['name']} ({target}): {length:.2f} хв")
+#             elif source == target:
+#                 print(f"Від {G.nodes[source]['name']} ({source}) до {G.nodes[target]['name']} ({target}): 0.00 хв (сама до себе)")
+#             else:
+#                 print(f"Від {G.nodes[source]['name']} ({source}) до {G.nodes[target]['name']} ({target}): Шлях не знайдено.")
 
-    distance_matrix = pd.DataFrame(all_pairs_shortest_paths_lengths).fillna(float('inf'))
-    print("\nМатриці відстаней (Час у хвилинах, Inf = немає шляху):")
-    print(distance_matrix.loc[nodes_to_display, nodes_to_display])
+#     distance_matrix = pd.DataFrame(all_pairs_shortest_paths_lengths).fillna(float('inf'))
+#     print("\nМатриці відстаней (Час у хвилинах, Inf = немає шляху):")
+#     print(distance_matrix.loc[nodes_to_display, nodes_to_display])
 
 
-except nx.NetworkXNoPath:
-    print("\nПомилка: Не всі вузли є доступними один від одного.")
-except Exception as e:
-    print(f"\nСталася помилка при обчисленні шляхів між усіма парами: {e}")
+# except nx.NetworkXNoPath:
+#     print("\nПомилка: Не всі вузли є доступними один від одного.")
+# except Exception as e:
+#     print(f"\nСталася помилка при обчисленні шляхів між усіма парами: {e}")
+
+
+# Пошук найкоротших шляхів кастомним алгоритмом Дійкстри
+
+
+def dijkstra(graph, start):
+    
+    distances = {vertex: float('infinity') for vertex in graph.nodes()}
+    distances[start] = 0
+
+    unvisited = set(graph.nodes())
+
+    while unvisited:
+       
+        min_distance = float('infinity')
+        current_vertex = None
+        for vertex in unvisited:
+            if distances[vertex] < min_distance:
+                min_distance = distances[vertex]
+                current_vertex = vertex
+
+        if current_vertex is None or distances[current_vertex] == float('infinity'):
+            break
+
+        unvisited.remove(current_vertex)
+        neighbors_weights = {}
+        for u, v, key, data in graph.edges(current_vertex, data=True, keys=True):
+            weight = data['weight'] 
+            if v not in neighbors_weights or weight < neighbors_weights[v]:
+                neighbors_weights[v] = weight
+
+        for neighbor, weight in neighbors_weights.items():
+            distance = distances[current_vertex] + weight
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+
+    return distances
+
+print("\nНайкоротші шляхи між усіма парами вершин")
+
+all_pairs_shortest_paths_length_custom = {}
+
+nodes_to_display = list(G.nodes())
+
+for start_node_id in nodes_to_display:
+    all_pairs_shortest_paths_length_custom[start_node_id] = dijkstra(G, start_node_id)
+
+
+distance_matrix_custom = pd.DataFrame(all_pairs_shortest_paths_length_custom).fillna(float('inf'))
+print("\nМатриці відстаней (Час у хвилинах, Inf = немає шляху):")
+print(distance_matrix_custom.loc[nodes_to_display, nodes_to_display])
